@@ -9,7 +9,7 @@
 - **Contact : FINGEREDMAN(fingeredman@gmail.com)**
 
 ---
-## What can you do with the 'TEANAPS Chat-bot`?
+## What can you do with the `TEANAPS Chat-bot`?
 
 - `TEANAPS` 챗봇은 카카오톡 플러스친구에서 `teanaps chatbot`을 검색해 친구추가 후 직접 사용해보실 수 있습니다.
 - `TEANAPS` 챗봇은 정보검색, Q/A, 알리미 등 다양한 서비스를 연동하여 활용할 수 있습니다.
