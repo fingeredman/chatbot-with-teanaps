@@ -15,6 +15,7 @@ import urllib.request
 import datetime
 import random
 import json
+import copy
 
 class ChatFlow():  
     def __init__(self):
@@ -70,6 +71,8 @@ class ChatFlow():
         self.intent_id_to_name = self.fh.load_data(con.INTENT_UTIL_PATH["intent_id_to_name"])
         
     def get_intent(self, flow, query, max_intent_count=1, intent_th=0):
+        flow.set_status("get_intent")
+        flow.set_query(query)
         # Query to Vector
         query_lower = query.lower()
         pos_result = self.ma.parse(query_lower)
@@ -81,11 +84,12 @@ class ChatFlow():
         intent_list = [(self.intent_id_to_name[i], i, r) for i, r in enumerate(intent_prob_list) if r > intent_th]
         intent_list.sort(key=lambda elem: elem[2], reverse=True)
         for intent_no, intent in enumerate(intent_list[:max_intent_count]):
-            flow.set_query(query)
-            flow.set_status("get_intent")
             flow.set_intent_type(intent_no, intent[0])
             flow.set_probability(intent_no, intent[2])
-
+     
+    def select_intent(self, flow, intent_no):
+        flow["intent"] = [flow["intent"][intent_no]]
+                  
     def get_meta(self, flow):
         flow.set_status("get_meta")
         flow = flow.get_flow()
@@ -99,7 +103,6 @@ class ChatFlow():
             for meta in con.META_FOR_INTENT[intent["intent_type"]]:
                 meta_tag = con.NER_FOR_META[meta]
                 intent["meta"][meta] = []
-                print(sa_result)
                 for word, pos_tag, ner_tag, _ in sa_result:
                     if ner_tag in meta_tag:
                         intent["meta"][meta].append(word)
@@ -110,30 +113,34 @@ class ChatFlow():
                         else:
                             if word not in intent["sub_meta"]:
                                 intent["sub_meta"].append(word)
-                                
-    def check_meta(self, flow, intent_no):
-        flow.set_status("check_meta")
+     
+    def check_meta(self, flow):
         flow = flow.get_flow()
-        intent = flow["intent"][intent_no]
-        print("intent", intent)
-        if intent["intent_type"] in ["time", "date"]:
+        check_list = []
+        for intent in flow["intent"]:
+            if intent["intent_type"] in ["time", "date"]:
+                if sum([len(intent["meta"][key]) for key in intent["meta"].keys()]) == 0:
+                    intent["meta"]["when"].append(None)
+                    check_list.append(True)
+                    continue
+            elif intent["intent_type"] in ["weather", "dust"]:
+                if sum([len(intent["meta"][key]) for key in intent["meta"].keys()]) == 0:
+                    intent["meta"]["when"].append("오늘")
+                    check_list.append(True)
+                    continue
+            elif intent["intent_type"] in ["translate"]:
+                if sum([len(intent["meta"][key]) for key in intent["meta"].keys()]) == 0:
+                    intent["meta"]["language"].append("영어")
+                    check_list.append(True)
+                    continue
             if sum([len(intent["meta"][key]) for key in intent["meta"].keys()]) == 0:
-                intent["meta"]["when"].append(None)
-                return True
-        elif intent["intent_type"] in ["weather", "dust"]:
-            if sum([len(intent["meta"][key]) for key in intent["meta"].keys()]) == 0:
-                intent["meta"]["when"].append("오늘")
-                return True
-        elif intent["intent_type"] in ["translate"]:
-            if sum([len(intent["meta"][key]) for key in intent["meta"].keys()]) == 0:
-                intent["meta"]["language"].append("영어")
-                return True
-        
-        if sum([len(intent["meta"][key]) for key in intent["meta"].keys()]) == 0:
-            if len(intent["meta"].keys()) > 0:
-                return False
-        return True
-       
+                if len(intent["meta"].keys()) > 0:
+                    check_list.append(False)
+                    continue 
+            check_list.append(True)
+            continue
+        return check_list
+                                       
     def get_user_response(self, flow, intent_no, user_response):
         flow.set_status("user_response")
         flow = flow.get_flow()
@@ -145,8 +152,6 @@ class ChatFlow():
         flow = flow.get_flow()
         intent = flow["intent"][intent_no]
         answer = random.choice(con.REPLY_CANDIDATE[intent["intent_type"]])
-        print(intent["meta"].keys())
-        print(intent["meta"])
         if intent["intent_type"] in ["news", "issue"]:
             meta = intent["meta"][list(intent["meta"].keys())[0]][0]
             result_list = self.find_news(meta)
@@ -244,8 +249,7 @@ class ChatFlow():
         if(rescode==200):
             response_body = response.read()
             items = json.loads(response_body.decode('utf-8'))["items"]
-            for item in items[:10]:
-                print("item", item)
+            for item in items[:5]:
                 thumbnail_image = self.get_news_thumbnail_image(item["link"])
                 result_list.append({"text": self.remove_html(item["title"]), 
                                     "link": item["link"],
@@ -262,22 +266,30 @@ class ChatFlow():
         url = "https://search.naver.com/search.naver?where=post&sm=tab_jum&query=" + encText
         page = urllib.request.urlopen(url)
         soup = BeautifulSoup(page, "html.parser")       
-        title_list = [post["title"] for post in soup.find_all("a", {'class': "sh_blog_title",})]
-        link_list = [post["href"] for post in soup.find_all("a", {'class': "sh_blog_title",})]
-        desc_list = [post.text for post in soup.find_all("dd", {'class': "sh_blog_passage",})]
-        thumbnail_list = [img["src"] for img in soup.find_all("img", {'class': "sh_blog_thumbnail",})]
+        title_list = [post["title"] for post in soup.find_all("a", {'class': "sh_blog_title",})][:5]
+        link_list = [post["href"] for post in soup.find_all("a", {'class': "sh_blog_title",})][:5]
+        desc_list = [post.text for post in soup.find_all("dd", {'class': "sh_blog_passage",})][:5]
+        thumbnail_list = [img["src"] for img in soup.find_all("img", {'class': "sh_blog_thumbnail",})][:5]
         blog_list = []
         for title, link, desc, thumbnail in zip(title_list, link_list, desc_list, thumbnail_list):
             blog_list.append({"text": title, "link": link, "desc": desc, "thumbnail_image": thumbnail})
         return blog_list
     
     def remove_html(self, text):
-        return text.replace("<b>", "\"").replace("</b>", "\"").replace("&quot;", "\"")
+        html_code_list = ["&nbsp;", "&quot;", "&amp;", "&apos;", "&lt;", "&gt;", "&nbsp;", "&iexcl;", 
+                          "&cent;", "&pound;", "&curren;", "&yen;", "&brvbar;", "&sect;", "&uml;", 
+                          "&copy;", "&ordf;", "&laquo;", "&not;", "</b>", "<b>"]
+        for html_code in html_code_list:
+            if html_code in ["<b>", "</b>", "&quot;"]:
+                text = text.replace(html_code, "\"")
+            else:
+                text = text.replace(html_code, "")
+        return text
     
     def get_news_thumbnail_image(self, url):
-        page = urllib.request.urlopen(url)
-        soup = BeautifulSoup(page, "html.parser")
         try:
+            page = urllib.request.urlopen(url)
+            soup = BeautifulSoup(page, "html.parser")
             return soup.find("meta", {'property': "og:image",})["content"]
         except:
             return "https://github.com/fingeredman/chatbot-with-teanaps/blob/master/data/logo/teanaps_chatbot_logo_square.png"
@@ -362,19 +374,26 @@ class Flow():
         }
         self.flow = {
             "query": None,
+            "reply_query": [],
             "status": "ready",
-            "intent": [intent] * intent_count
+            "intent": []
         }
+        for i in range(intent_count):
+            self.flow["intent"].append(copy.deepcopy(intent))
         
     def get_flow(self):
         return self.flow
     
-    def init_meta(self, intent_no):
-        for meta_type in self.flow["intent"][intent_no]["meta"].keys():
-            self.flow["intent"][intent_no]["meta"][meta_type] = []
-        self.flow["intent"][intent_no]["answer"] = []
-        self.flow["status"] = "ready"
+    def init_meta(self):
+        for intent in self.flow["intent"]:
+            for meta_type in intent["meta"].keys():
+                intent["meta"][meta_type] = []
+            intent["answer"] = []
+            self.flow["status"] = "ready"
     
+    def add_reply_query(self, query):
+        self.flow["reply_query"].append(query)
+        
     def set_query(self, query):
         self.flow["query"] = query
     

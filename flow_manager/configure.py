@@ -77,6 +77,35 @@ META_FOR_INTENT = {
     #"saying": [],
     "translate": ["language"],
     "time": ["when"],
+    None: []
+}
+META_ID_TO_NAME = {
+    "information": "정보 물어보기",
+    "music": "음악/가수 정보 물어보기",
+    "issue": "이슈 물어보기",
+    "people": "인물정보 물어보기",
+    "transfer": "이적시장 물어보기",
+    "date": "날짜 물어보기",
+    "weather": "날씨 물어보기",
+    "news": "뉴스 찾아보기",
+    "restraunt": "맛집 물어보기",
+    "dust": "미세먼지 정보 물어보기",
+    "translate": "번역 물어보기",
+    "time": "시간 물어보기"
+}
+META_NAME_TO_ID = {
+    "정보 물어보기": "information",
+    "음악/가수 정보 물어보기": "music",
+    "이슈 물어보기": "issue",
+    "인물정보 물어보기": "people",
+    "이적시장 물어보기": "transfer",
+    "날짜 물어보기": "date",
+    "날씨 물어보기": "weather",
+    "뉴스 찾아보기": "news",
+    "맛집 물어보기": "restraunt",
+    "미세먼지 정보 물어보기": "dust",
+    "번역 물어보기": "translate",
+    "시간 물어보기": "time"
 }
 NER_FOR_META = {
     "about": ["PS", "FD", "TR", "AF", "OG", "LC", "CV", "EV", "AM", "PT", "MT", "TM"],
@@ -91,32 +120,32 @@ NER_FOR_META = {
     "language": []
 }
 QUERY_FOR_META = {
-    "about": "뭘?",
-    "singer": "누구노래?",
-    "title": "제목은?",
-    "when": "언제?",
-    "category": "어느분야?",
-    "who": "누구?",
-    "player": "어떤선수?",
-    "team": "어느팀?",
-    "location": "어디?",
-    "language": "어느나라 말로?"
+    "about": "무엇에 대해 찾으시나요?",
+    "singer": "누구 노래,또는 어떤 노래를 찾으시나요?",
+    "title": "제목을 알려주실 수 있나요?",
+    "when": "언제 정보를 가져올까요?",
+    "category": "어느분야 정보가 필요하세요?",
+    "who": "누구 정보를 찾으세요?",
+    "player": "어떤 선수 정보를 찾으시나요?",
+    "team": "어느팀 정보를 찾으시나요?",
+    "location": "어디를 말씀하시는거에요?",
+    "language": "어느나라 말로 번역할까요?"
 }
 REPLY_CANDIDATE = {
     "nonsense": ["정답은 \"{1}\" 입니다."],
     "information": ["말씀하신 내용을 찾아봤어요."],
-    "music": ["\"{1}\" 노래를 찾아봤어요."],
-    "issue": ["\"{1}\" 이슈를 찾아봤어요."],
-    "people": ["\"{1}\" 인물정보를 찾았습니다."],
-    "transfer": ["\"{1}\" 이적정보를 알려드립니다."],
-    "date": ["\"{1}\" 날짜를 알려드려요."],
+    "music": ["노래를 찾아봤어요."],
+    "issue": ["이슈를 찾아봤어요."],
+    "people": ["인물정보를 찾았습니다."],
+    "transfer": ["이적정보를 알려드립니다."],
+    "date": ["날짜를 알려드려요."],
     "weather": ["날씨예보입니다."],
     "news": ["요청하신 뉴스를 찾았습니다."],
     "restraunt": ["말씀하진 지역 맛집을 찾아봤어요."],
-    "dust": ["\"{1}\" 미세먼지 예보입니다."],
+    "dust": ["미세먼지 예보입니다."],
     "saying": ["글귀 하나를 추천드려요."],
     "translate": ["번역 결과입니다."],
-    "time": ["\"{1}\" 시간을 알려드려요."],
+    "time": ["시간을 알려드려요."],
 }
 NAVER_API_CID = "BaR------"
 NAVER_API_CPW = "3_q------"
