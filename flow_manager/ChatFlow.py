@@ -1,18 +1,3 @@
-from sklearn.model_selection import train_test_split
-from sklearn.tree import DecisionTreeClassifier
-from sklearn.ensemble import RandomForestClassifier
-import numpy as np
-import random
-
-import os
-import sys
-import urllib.request
-import json
-import datetime
-
-from bs4 import BeautifulSoup 
-import urllib
-
 from teanaps.nlp import MorphologicalAnalyzer
 from teanaps.nlp import NamedEntityRecognizer
 from teanaps.nlp import SyntaxAnalyzer
@@ -20,7 +5,16 @@ from teanaps.nlp import Processing
 from teanaps.handler import FileHandler
 from teanaps.text_analysis import TfidfCalculator
 
-import configure as con
+from flow_manager import configure as con
+
+from sklearn.model_selection import train_test_split
+from sklearn.ensemble import RandomForestClassifier
+
+from bs4 import BeautifulSoup 
+import urllib.request
+import datetime
+import random
+import json
 
 class ChatFlow():  
     def __init__(self):
@@ -31,7 +25,6 @@ class ChatFlow():
         self.tfidf = TfidfCalculator()
         self.processing = Processing()
         self.fh = FileHandler()
-        self.max_len = 29
         
     def train(self, train_data, file_name):
         self.intent_id_to_name = {}
@@ -54,11 +47,6 @@ class ChatFlow():
             ner_result = self.ner.parse(query_lower)
             sa_result = self.sa.parse(pos_result, ner_result)
             document_list.append(self.processing.get_plain_text(sa_result, tag=False))
-            '''
-            list_of_input_ids = self.__sentence_to_token_index_list([query_lower])[0]
-            input_vector = list_of_input_ids[:self.max_len] + ([0] * (self.max_len-len(list_of_input_ids))) + [list_of_input_ids[-1]]
-            document_list.append(input_vector)
-            '''
         self.tfidf.calculation_tfidf(document_list)
         tfidf_matrix = self.tfidf.get_tfidf_matrix().values[:]
         label_list = [intent_name_to_id[intent_name] for _, intent_name in train_data]
@@ -71,17 +59,15 @@ class ChatFlow():
         self.fh.save_data(file_name, self.intent_model)
         self.fh.save_data("intent_id_to_name", self.intent_id_to_name)
         print("Model Saved.", file_name)
-        self.load_vectorizer("tfidf_vectorizer")
+        self.load_vectorizer()
     
-    def load_model(self, file_name):
-        self.intent_model = self.fh.load_data(file_name)
-        print("Model Loaded.", file_name)
-        self.intent_id_to_name = self.fh.load_data("intent_id_to_name")
+    def load_model(self):        
+        self.intent_model = self.fh.load_data(con.INTENT_MODEL_PATH)
+        self.intent_id_to_name = self.fh.load_data(con.INTENT_UTIL_PATH["intent_id_to_name"])
     
-    def load_vectorizer(self, file_name):
-        self.vectorizer = self.fh.load_data(file_name)
-        print("Vectorizer Loaded.", file_name)
-        self.intent_id_to_name = self.fh.load_data("intent_id_to_name")
+    def load_vectorizer(self):
+        self.vectorizer = self.fh.load_data(con.INTENT_UTIL_PATH["tfidf_vectorizer"])
+        self.intent_id_to_name = self.fh.load_data(con.INTENT_UTIL_PATH["intent_id_to_name"])
         
     def get_intent(self, flow, query, max_intent_count=1, intent_th=0):
         # Query to Vector
@@ -89,16 +75,11 @@ class ChatFlow():
         pos_result = self.ma.parse(query_lower)
         ner_result = self.ner.parse(query_lower)
         sa_result = self.sa.parse(pos_result, ner_result)
-        input_vector = self.tfidf.get_tfidf_vector(self.processing.get_plain_text(sa_result, tag=False))
-        '''
-        list_of_input_ids = self.__sentence_to_token_index_list([query_lower])[0]
-        input_vector = list_of_input_ids[:self.max_len] + ([0] * (self.max_len-len(list_of_input_ids))) + [list_of_input_ids[-1]]
-        '''
+        input_vector = self.tfidf.get_tfidf_vector(self.processing.get_plain_text(sa_result, tag=False), tfidf_vectorizer_path=con.TFIDF_VECTORIZER_PATH)
         # Predict Intent
         intent_prob_list = self.intent_model.predict_proba([input_vector]).tolist()[0]
         intent_list = [(self.intent_id_to_name[i], i, r) for i, r in enumerate(intent_prob_list) if r > intent_th]
         intent_list.sort(key=lambda elem: elem[2], reverse=True)
-        query_info_list = []
         for intent_no, intent in enumerate(intent_list[:max_intent_count]):
             flow.set_query(query)
             flow.set_status("get_intent")
@@ -118,26 +99,41 @@ class ChatFlow():
             for meta in con.META_FOR_INTENT[intent["intent_type"]]:
                 meta_tag = con.NER_FOR_META[meta]
                 intent["meta"][meta] = []
-                for word, pos_tag, ner_tag, loc in sa_result:
+                print(sa_result)
+                for word, pos_tag, ner_tag, _ in sa_result:
                     if ner_tag in meta_tag:
                         intent["meta"][meta].append(word)
-                    elif pos_tag in ["NNG", "NNP", "MAG"] and word not in intent["sub_meta"]:
-                        intent["sub_meta"].append(word)
-                        
+                    elif pos_tag in ["NNG", "NNP", "MAG"]:
+                        if word in con.META_FOR_META_TYPE.keys():
+                            if word not in intent["meta"][con.META_FOR_META_TYPE[word]]:
+                                intent["meta"][con.META_FOR_META_TYPE[word]].append(word)
+                        else:
+                            if word not in intent["sub_meta"]:
+                                intent["sub_meta"].append(word)
+                                
     def check_meta(self, flow, intent_no):
         flow.set_status("check_meta")
         flow = flow.get_flow()
         intent = flow["intent"][intent_no]
+        print("intent", intent)
+        if intent["intent_type"] in ["time", "date"]:
+            if sum([len(intent["meta"][key]) for key in intent["meta"].keys()]) == 0:
+                intent["meta"]["when"].append(None)
+                return True
+        elif intent["intent_type"] in ["weather", "dust"]:
+            if sum([len(intent["meta"][key]) for key in intent["meta"].keys()]) == 0:
+                intent["meta"]["when"].append("오늘")
+                return True
+        elif intent["intent_type"] in ["translate"]:
+            if sum([len(intent["meta"][key]) for key in intent["meta"].keys()]) == 0:
+                intent["meta"]["language"].append("영어")
+                return True
+        
         if sum([len(intent["meta"][key]) for key in intent["meta"].keys()]) == 0:
             if len(intent["meta"].keys()) > 0:
-                question = con.QUERY_FOR_META[list(intent["meta"].keys())[0]]
-                self.ask_a_question(question)
                 return False
         return True
-    
-    def ask_a_question(self, question):
-        print("Chat-bot :", question)
-        
+       
     def get_user_response(self, flow, intent_no, user_response):
         flow.set_status("user_response")
         flow = flow.get_flow()
@@ -150,28 +146,54 @@ class ChatFlow():
         intent = flow["intent"][intent_no]
         answer = random.choice(con.REPLY_CANDIDATE[intent["intent_type"]])
         print(intent["meta"].keys())
-        meta = intent["meta"][list(intent["meta"].keys())[0]][0]
-        intent["answer"] = answer.replace("{1}", meta)
+        print(intent["meta"])
         if intent["intent_type"] in ["news", "issue"]:
-            intent["answer"] += "\n------\n" + self.find_news(meta, "news")
+            meta = intent["meta"][list(intent["meta"].keys())[0]][0]
+            result_list = self.find_news(meta)
+            intent["answer"] = result_list
         elif intent["intent_type"] in ["information"]:
-            intent["answer"] += "\n------\n" + self.find_news(meta, "blog")
+            meta = intent["meta"][list(intent["meta"].keys())[0]][0]
+            result_list = self.find_blog(meta)
+            intent["answer"] = result_list
         elif intent["intent_type"] in ["people"]:
-            intent["answer"] += "\n------\n" + self.get_people_info(meta)
+            meta = intent["meta"][list(intent["meta"].keys())[0]][0]
+            result = self.get_people_info(meta)
+            intent["answer"].append(result)
         elif intent["intent_type"] in ["music"]:
-            intent["answer"] += "\n------\n링크에서 정보를 확인해보세요.\nhttps://vibe.naver.com/search?query=" + meta
+            meta = intent["meta"][list(intent["meta"].keys())[0]][0]
+            answer_dict = {"text": answer.replace("{1}", meta), "link": "https://vibe.naver.com/search?query=" + meta}
+            intent["answer"].append(answer_dict)
         elif intent["intent_type"] in ["weather", "dust"]:
-            intent["answer"] += "\n------\n" + self.get_weather_info(meta)
+            when = intent["meta"]["when"][0] if len(intent["meta"]["when"]) > 0 else None
+            location = intent["meta"]["location"][0] if len(intent["meta"]["location"]) > 0 else None
+            text = self.get_weather_info(when, location)
+            answer_dict = {"text": text, "link": None}
+            intent["answer"].append(answer_dict)
         elif intent["intent_type"] in ["restraunt", "saying", "nonsense"]:
-            intent["answer"] += "\n------\n" + self.find_news(meta, "blog")
+            meta = intent["meta"][list(intent["meta"].keys())[0]][0]
+            result_list = self.find_blog(meta)
+            intent["answer"] = result_list
         elif intent["intent_type"] in ["time", "date"]:
+            meta = intent["meta"][list(intent["meta"].keys())[0]][0]
             now = datetime.datetime.now()
-            date_time = now.strftime('%Y년 %m월 %d일 %H시 %M분 %S초')
-            intent["answer"] += "\n------\n" + date_time
+            if intent["intent_type"] == "time":
+                date_time = now.strftime('%Y년 %m월 %d일 %H시 %M분 %S초')
+                text = "현재 시간은 " + date_time + "입니다."
+            else:
+                date_time = now.strftime('%Y년 %m월 %d일')
+                text = "오늘은 " + date_time + "입니다."
+            answer_dict = {"text": text, "link": None}
+            intent["answer"].append(answer_dict)
         elif intent["intent_type"] in ["transfer"]:
-            intent["answer"] += "\n------\n" + "준비중"
+            meta = intent["meta"][list(intent["meta"].keys())[0]][0]
+            text = answer.replace("{1}", meta) + "\n------\n" + "준비중"
+            answer_dict = {"text": text, "link": None}
+            intent["answer"].append(answer_dict)
         elif intent["intent_type"] in ["translate"]:
-            intent["answer"] += "\n------\n" + self.translate(intent["query"])
+            meta = intent["meta"][list(intent["meta"].keys())[0]][0]
+            text = answer + "\n" + meta + ") " + self.translate(flow["query"])
+            answer_dict = {"text": text, "link": None}
+            intent["answer"].append(answer_dict)
             
     def translate(self, query, language="en"):
         if query.strip() == "":
@@ -191,29 +213,58 @@ class ChatFlow():
         else:
             return "Error Code:" + rescode        
     
-    def find_news(self, query, source):
+    def find_news(self, query):
         if query.strip() == "":
-            return "정보를 찾을 수 없습니다."
+            return []
         encText = urllib.parse.quote(query)
-        url = "https://openapi.naver.com/v1/search/" + source + "?query=" + encText # json 결과
-        # url = "https://openapi.naver.com/v1/search/blog.xml?query=" + encText # xml 결과
+        url = "https://openapi.naver.com/v1/search/news?query=" + encText
         request = urllib.request.Request(url)
         request.add_header("X-Naver-Client-Id", con.NAVER_API_CID)
         request.add_header("X-Naver-Client-Secret", con.NAVER_API_CPW)
         response = urllib.request.urlopen(request)
         rescode = response.getcode()
+        result_list = []        
         if(rescode==200):
             response_body = response.read()
             items = json.loads(response_body.decode('utf-8'))["items"]
-            result = ""
-            for i, item in enumerate(items):
-                result += str(i) + ".\n"
-                result += item["title"] + "\n"
-                result += item["link"] + "\n\n"
-            return result
+            for item in items[:10]:
+                print("item", item)
+                thumbnail_image = self.get_news_thumbnail_image(item["link"])
+                result_list.append({"text": self.remove_html(item["title"]), 
+                                    "link": item["link"],
+                                    "thumbnail_image": thumbnail_image,
+                                    "desc": self.remove_html(item["description"])})
+            return result_list
         else:
-            return "Error Code:" + rescode
+            return []
+        
+    def find_blog(self, query):
+        if query.strip() == "":
+            return []
+        encText = urllib.parse.quote(query)
+        url = "https://search.naver.com/search.naver?where=post&sm=tab_jum&query=" + encText
+        page = urllib.request.urlopen(url)
+        soup = BeautifulSoup(page, "html.parser")       
+        title_list = [post["title"] for post in soup.find_all("a", {'class': "sh_blog_title",})]
+        link_list = [post["href"] for post in soup.find_all("a", {'class': "sh_blog_title",})]
+        desc_list = [post.text for post in soup.find_all("dd", {'class': "sh_blog_passage",})]
+        thumbnail_list = [img["src"] for img in soup.find_all("img", {'class': "sh_blog_thumbnail",})]
+        blog_list = []
+        for title, link, desc, thumbnail in zip(title_list, link_list, desc_list, thumbnail_list):
+            blog_list.append({"text": title, "link": link, "desc": desc, "thumbnail_image": thumbnail})
+        return blog_list
     
+    def remove_html(self, text):
+        return text.replace("<b>", "\"").replace("</b>", "\"").replace("&quot;", "\"")
+    
+    def get_news_thumbnail_image(self, url):
+        page = urllib.request.urlopen(url)
+        soup = BeautifulSoup(page, "html.parser")
+        try:
+            return soup.find("meta", {'property': "og:image",})["content"]
+        except:
+            return "https://github.com/fingeredman/chatbot-with-teanaps/blob/master/data/logo/teanaps_chatbot_logo_square.png"
+        
     def get_people_info(self, query):
         query = urllib.parse.quote(query)
         URL = "https://search.naver.com/search.naver?sm=top_hty&fbm=1&ie=utf8&query=" + query
@@ -229,13 +280,20 @@ class ChatFlow():
         }
         for label, content in zip(people_info.find_all("dt"), people_info.find_all("dd")[1:]):
             info[label.text] = content.text
-        info["link"] = link
-        result = ""
+        result = {}
+        text = ""
         for k, v in info.items():
-            result += k + " : " + v + "\n"
-        return result.strip()
+            text += "▷ " + k.replace("name", "이름").replace("job", "직업") + " : " + v + "\n"
+        result["text"] = text.strip()
+        result["link"] = link
+        return result
     
-    def get_weather_info(self, query):
+    def get_weather_info(self, when, location):
+        query = ""
+        if when is not None:
+            query += when + " "
+        if location is not None:
+            query += location + " "
         query_string = urllib.parse.quote(query)
         URL = "https://search.naver.com/search.naver?sm=top_hty&fbm=1&ie=utf8&query=" + query_string + "+%EB%82%A0%EC%94%A8"
         page = urllib.request.urlopen(URL)
@@ -244,7 +302,7 @@ class ChatFlow():
         result = ""
         temp = weather_box.find("span", {'class': "todaytemp",}).text + "도"
         desc = weather_box.find("p", {'class': "cast_txt",}).text
-        result += query + " 날씨는" + temp + "로, " + desc + "."
+        result += query + "날씨는" + temp + "로, " + desc + ". "
         status = weather_box.find("dl", {'class': "indicator",}).find_all("dd")
         label = weather_box.find("dl", {'class': "indicator",}).find_all("dt")
         for s, l in zip(status, label):
@@ -283,7 +341,7 @@ class Flow():
             "probability": 0.0,
             "meta": {},
             "sub_meta": [],
-            "answer": None
+            "answer": []
         }
         self.flow = {
             "query": None,
@@ -297,6 +355,8 @@ class Flow():
     def init_meta(self, intent_no):
         for meta_type in self.flow["intent"][intent_no]["meta"].keys():
             self.flow["intent"][intent_no]["meta"][meta_type] = []
+        self.flow["intent"][intent_no]["answer"] = []
+        self.flow["status"] = "ready"
     
     def set_query(self, query):
         self.flow["query"] = query
