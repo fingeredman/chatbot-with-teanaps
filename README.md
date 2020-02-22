@@ -13,9 +13,9 @@
 
 - `TEANAPS` 챗봇은 카카오톡 플러스친구에서 `teanaps chatbot`을 검색해 친구추가 후 직접 사용해보실 수 있습니다.
 
-  > ![chatbot_ex1](../data/sample_image/chatbot_ex1.png)  
+  > ![chatbot_ex1](data/sample_image/chatbot_ex1.png)  
 
-  > ![chatbot_ex2](../data/sample_image/chatbot_ex2.png)
+  > ![chatbot_ex2](data/sample_image/chatbot_ex2.png)
 
 ---
 ## How do chat-bots work?
@@ -26,7 +26,7 @@
 
 - 챗봇 구조도
 
-  > ![chatbot_architecture](../data/sample_image/chatbot_architecture.png)
+  > ![chatbot_architecture](data/sample_image/chatbot_architecture.png)
 
   > Notes :  
   > - `TEANAPS` 챗봇의 구조는 간단한 Q/A 또는 정보검색을 위해 설계되었습니다.
@@ -34,7 +34,7 @@
 
 - 챗봇이 사용자 질문에 답변하는 과정 (Process Diagram)
 
-  > ![chatbot_flow](../data/sample_image/chatbot_flow.png)
+  > ![chatbot_flow](data/sample_image/chatbot_flow.png)
 
 - 각 과정 별 역할
 
