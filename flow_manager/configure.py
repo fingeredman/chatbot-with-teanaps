@@ -36,11 +36,31 @@ META_FOR_META_TYPE = {
     "그저께": "when",
     "지금": "when",
     "영어": "language",
+    "미국말": "language",
     "중국어": "language",
     "스페인어": "language",
     "한국어": "language",
+    "한국말": "language",
     "불어": "language",
-    "일본어": "language",
+    "프랑스어": "language",
+    "베트남어": "language",
+    "태국어": "language",
+    "인도네시아어": "language",
+    "번역": "language"
+}
+LANGUAGE_TO_CODE = {
+    "영어": "en",
+    "미국말": "en",
+    "중국어": "zh-CN",
+    "스페인어": "es",
+    "한국어": "ko",
+    "한국말": "ko",
+    "불어": "fr",
+    "프랑스어": "fr",
+    "베트남어": "vi",
+    "태국어": "th",
+    "인도네시아어": "id",
+    "번역": "en"
 }
 META_FOR_INTENT = {
     #"nonsense": [],
@@ -98,5 +118,5 @@ REPLY_CANDIDATE = {
     "translate": ["번역 결과입니다."],
     "time": ["\"{1}\" 시간을 알려드려요."],
 }
-NAVER_API_CID = "BaRs------"
-NAVER_API_CPW = "3_qr------"
+NAVER_API_CID = "BaR------"
+NAVER_API_CPW = "3_q------"

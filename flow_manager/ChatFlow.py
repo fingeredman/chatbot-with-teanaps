@@ -191,15 +191,32 @@ class ChatFlow():
             intent["answer"].append(answer_dict)
         elif intent["intent_type"] in ["translate"]:
             meta = intent["meta"][list(intent["meta"].keys())[0]][0]
-            text = answer + "\n" + meta + ") " + self.translate(flow["query"])
+            text = answer + "\n" + meta + ") " + self.translate(flow["query"], language=meta)
             answer_dict = {"text": text, "link": None}
             intent["answer"].append(answer_dict)
             
-    def translate(self, query, language="en"):
+    def translate(self, query, language="영어"):
+        if language not in con.LANGUAGE_TO_CODE.keys():
+            return "지원하지 않는 언어입니다."
+        language_code = con.LANGUAGE_TO_CODE[language]
+        query_lower = query.lower()
+        pos_result = self.ma.parse(query_lower)
+        ner_result = self.ner.parse(query_lower)
+        sa_result = self.sa.parse(pos_result, ner_result)
+        end = -1
+        for i, sa in enumerate(sa_result):
+            if sa[0] in [key for key in con.META_FOR_META_TYPE.keys() if con.META_FOR_META_TYPE[key] == "language"]:
+                if sa_result[i-1][1] in ["JKS"]:
+                    sa_result[i-1][3][0]
+                else:  
+                    end = sa[3][0]
+                break
+            end = sa[3][0]
+        query = query[:end]
         if query.strip() == "":
-            return "번역할 수 없습니다."
+            return "번역할 수 없는 문장입니다."
         encText = urllib.parse.quote(query)
-        data = "source=ko&target=" + language + "&text=" + encText
+        data = "source=ko&target=" + language_code + "&text=" + encText
         url = "https://openapi.naver.com/v1/papago/n2mt"
         request = urllib.request.Request(url)
         request.add_header("X-Naver-Client-Id", con.NAVER_API_CID)
@@ -211,7 +228,7 @@ class ChatFlow():
             translated_text = json.loads(response_body.decode('utf-8'))["message"]["result"]["translatedText"]
             return translated_text
         else:
-            return "Error Code:" + rescode        
+            return "번역할 수 없는 문장입니다."        
     
     def find_news(self, query):
         if query.strip() == "":
