@@ -22,11 +22,27 @@ REPLY_TYPE = {
         }
     }
 }
-TFIDF_VECTORIZER_PATH = "../model/intent/tfidf_vectorizer"
-INTENT_MODEL_PATH = "../model/intent/intent_model_v1"
-INTENT_UTIL_PATH = {
-    "intent_id_to_name": "../model/intent/intent_id_to_name",
-    "tfidf_vectorizer": "../model/intent/tfidf_vectorizer",
+MODEL_CONFIG = {
+    "random_forest": {
+        "model": "../model/intent/random_forest/intent_model_v1",
+        "intent_id_to_name": "../model/intent/random_forest/intent_id_to_name",
+        "tfidf_vectorizer": "../model/intent/random_forest/tfidf_vectorizer",
+        "vectorizer": "../model/intent/random_forest/tfidf_vectorizer",
+    },
+    "bert": {
+        "model_state_dict": "../model/intent/bert/model_state_dict",
+        "bertmodel": "../model/intent/bert/bertmodel",
+        "intent_id_to_name": "../model/intent/bert/intent_id_to_name",
+        "index_to_token": "../model/intent/bert/index_to_token",
+        "token_to_index": "../model/intent/bert/token_to_index",
+        "tokenizer": "../model/intent/bert/tokenizer",
+    }
+}
+VOCAB = {
+    "padding_token": "[PAD]",
+    "cls_token": "[CLS]",
+    "sep_token": "[SEP]",
+    "unk_token": "[UNK]"
 }
 META_FOR_META_TYPE = {
     "오늘": "when",
@@ -63,7 +79,6 @@ LANGUAGE_TO_CODE = {
     "번역": "en"
 }
 META_FOR_INTENT = {
-    #"nonsense": [],
     "information": ["about"],
     "music": ["singer", "title"],
     "issue": ["when", "category"],
@@ -74,7 +89,6 @@ META_FOR_INTENT = {
     "news": ["about"],
     "restraunt": ["location"],
     "dust": ["when", "location"],
-    #"saying": [],
     "translate": ["language"],
     "time": ["when"],
     None: []
@@ -147,5 +161,5 @@ REPLY_CANDIDATE = {
     "translate": ["번역 결과입니다."],
     "time": ["시간을 알려드려요."],
 }
-NAVER_API_CID = "BaR------"
-NAVER_API_CPW = "3_q------"
+NAVER_API_CID = "BaR-------"
+NAVER_API_CPW = "3_q-------"

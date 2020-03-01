@@ -6,9 +6,7 @@ from teanaps.handler import FileHandler
 from teanaps.text_analysis import TfidfCalculator
 
 from flow_manager import configure as con
-
-from sklearn.model_selection import train_test_split
-from sklearn.ensemble import RandomForestClassifier
+from flow_manager import IntentClassifier
 
 from bs4 import BeautifulSoup 
 import urllib.request
@@ -26,67 +24,40 @@ class ChatFlow():
         self.tfidf = TfidfCalculator()
         self.processing = Processing()
         self.fh = FileHandler()
-        
-    def train(self, train_data, file_name):
-        self.intent_id_to_name = {}
-        intent_name_to_id = {}
-        document_list = []
-        intent_id = -1
-        temp_intent_name = None
-        print(len(train_data))
-        index = 0
-        for query, intent_name in train_data:
-            index += 1
-            print(index, end="\r")
-            if temp_intent_name != intent_name:
-                intent_id += 1
-            temp_intent_name = intent_name
-            self.intent_id_to_name[intent_id] = intent_name
-            intent_name_to_id[intent_name] = intent_id
-            query_lower = query.lower()
-            pos_result = self.ma.parse(query_lower)
-            ner_result = self.ner.parse(query_lower)
-            sa_result = self.sa.parse(pos_result, ner_result)
-            document_list.append(self.processing.get_plain_text(sa_result, tag=False))
-        self.tfidf.calculation_tfidf(document_list)
-        tfidf_matrix = self.tfidf.get_tfidf_matrix().values[:]
-        label_list = [intent_name_to_id[intent_name] for _, intent_name in train_data]
-        x_train, x_test, y_train, y_test = train_test_split(tfidf_matrix, label_list, test_size=0.10, random_state=None)
-        #forest = RandomForestClassifier(criterion='entropy', n_estimators=10, random_state=1, n_jobs=2)
-        self.intent_model = RandomForestClassifier()
-        self.intent_model.fit(x_train, y_train)
-        score = self.intent_model.score(x_test, y_test)
-        print('Accuracy (forest) :', score)
-        self.fh.save_data(file_name, self.intent_model)
-        self.fh.save_data("intent_id_to_name", self.intent_id_to_name)
-        print("Model Saved.", file_name)
-        self.load_vectorizer()
+        self.model_type = "random_forest"
     
-    def load_model(self):        
-        self.intent_model = self.fh.load_data(con.INTENT_MODEL_PATH)
-        self.intent_id_to_name = self.fh.load_data(con.INTENT_UTIL_PATH["intent_id_to_name"])
-    
-    def load_vectorizer(self):
-        self.vectorizer = self.fh.load_data(con.INTENT_UTIL_PATH["tfidf_vectorizer"])
-        self.intent_id_to_name = self.fh.load_data(con.INTENT_UTIL_PATH["intent_id_to_name"])
-        
+    def load_model(self, model_type="random_forest"):
+        if model_type == "random_forest":    
+            self.intent_model = self.fh.load_data(con.MODEL_CONFIG["random_forest"]["model"])
+            self.intent_id_to_name = self.fh.load_data(con.MODEL_CONFIG["random_forest"]["intent_id_to_name"])
+        elif model_type == "bert":
+            self.ic = IntentClassifier.IntentClassifierBERT()
+        self.model_type = model_type
+               
     def get_intent(self, flow, query, max_intent_count=1, intent_th=0):
         flow.set_status("get_intent")
         flow.set_query(query)
-        # Query to Vector
         query_lower = query.lower()
-        pos_result = self.ma.parse(query_lower)
-        ner_result = self.ner.parse(query_lower)
-        sa_result = self.sa.parse(pos_result, ner_result)
-        input_vector = self.tfidf.get_tfidf_vector(self.processing.get_plain_text(sa_result, tag=False), tfidf_vectorizer_path=con.TFIDF_VECTORIZER_PATH)
-        # Predict Intent
-        intent_prob_list = self.intent_model.predict_proba([input_vector]).tolist()[0]
-        intent_list = [(self.intent_id_to_name[i], i, r) for i, r in enumerate(intent_prob_list) if r > intent_th]
-        intent_list.sort(key=lambda elem: elem[2], reverse=True)
-        for intent_no, intent in enumerate(intent_list[:max_intent_count]):
-            flow.set_intent_type(intent_no, intent[0])
-            flow.set_probability(intent_no, intent[2])
-     
+        if self.model_type == "random_forest":
+            # Query to Vector
+            pos_result = self.ma.parse(query_lower)
+            ner_result = self.ner.parse(query_lower)
+            sa_result = self.sa.parse(pos_result, ner_result)
+            input_vector = self.tfidf.get_tfidf_vector(self.processing.get_plain_text(sa_result, tag=False), tfidf_vectorizer_path=con.MODEL_CONFIG["random_forest"]["vectorizer"])
+            # Predict Intent
+            intent_prob_list = self.intent_model.predict_proba([input_vector]).tolist()[0]
+            intent_list = [(self.intent_id_to_name[i], i, r) for i, r in enumerate(intent_prob_list) if r > intent_th]
+            intent_list.sort(key=lambda elem: elem[2], reverse=True)
+            for intent_no, intent in enumerate(intent_list[:max_intent_count]):
+                flow.set_intent_type(intent_no, intent[0])
+                flow.set_probability(intent_no, intent[2])
+        elif self.model_type == "bert":
+            intent_prob_list = self.ic.parse(query_lower, intent_count=max_intent_count)
+            intent_list = [(intent_type, intent_prob) for intent_type, intent_prob in intent_prob_list if intent_prob > intent_th]
+            for intent_no, intent in enumerate(intent_list[:max_intent_count]):
+                flow.set_intent_type(intent_no, intent[0])
+                flow.set_probability(intent_no, intent[1])
+                
     def select_intent(self, flow, intent_no):
         flow["intent"] = [flow["intent"][intent_no]]
                   
@@ -97,19 +68,23 @@ class ChatFlow():
         pos_result = self.ma.parse(query)
         ner_result = self.ner.parse(query)
         sa_result = self.sa.parse(pos_result, ner_result)
+        print(flow)
         for intent in flow["intent"]:
             intent["meta"] = {}
             intent["sub_meta"] = []
             for meta in con.META_FOR_INTENT[intent["intent_type"]]:
+                print(meta)
                 meta_tag = con.NER_FOR_META[meta]
                 intent["meta"][meta] = []
+                print(flow)
                 for word, pos_tag, ner_tag, _ in sa_result:
                     if ner_tag in meta_tag:
                         intent["meta"][meta].append(word)
                     elif pos_tag in ["NNG", "NNP", "MAG"]:
                         if word in con.META_FOR_META_TYPE.keys():
-                            if word not in intent["meta"][con.META_FOR_META_TYPE[word]]:
-                                intent["meta"][con.META_FOR_META_TYPE[word]].append(word)
+                            if con.META_FOR_META_TYPE[word] in intent["meta"].keys():
+                                if word not in intent["meta"][con.META_FOR_META_TYPE[word]]:
+                                    intent["meta"][con.META_FOR_META_TYPE[word]].append(word)
                         else:
                             if word not in intent["sub_meta"]:
                                 intent["sub_meta"].append(word)
@@ -179,6 +154,9 @@ class ChatFlow():
             result_list = self.find_blog(meta)
             intent["answer"] = result_list
         elif intent["intent_type"] in ["time", "date"]:
+            if len(intent["meta"][list(intent["meta"].keys())[0]]) == 0:
+                text = "역시 진상형.. ㄷㄷ"
+                answer_dict = {"text": text, "link": None}
             meta = intent["meta"][list(intent["meta"].keys())[0]][0]
             now = datetime.datetime.now()
             if intent["intent_type"] == "time":
@@ -415,3 +393,4 @@ class Flow():
         
     def set_answer(self, intent_no, answer):
         self.flow["intent"][intent_no]["answer"] = answer
+    
