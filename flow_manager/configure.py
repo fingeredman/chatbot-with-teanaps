@@ -161,5 +161,12 @@ REPLY_CANDIDATE = {
     "translate": ["번역 결과입니다."],
     "time": ["시간을 알려드려요."],
 }
-NAVER_API_CID = "BaR-------"
-NAVER_API_CPW = "3_q-------"
+NAVER_API_CID = "BaR----"
+NAVER_API_CPW = "3_q----"
+DIALOGFLOW_CREDENTIAL_PATH = "../teanaps-chat-7c----.json"
+DIALOGFLOW_BASE_URL = "https://api.dialogflow.com/v1/"
+DIALOGFLOW_CLIENT_ACCESS_TOKEN = "331----"
+DIALOGFLOW_DEVELOPER_ACCESS_TOKEN = "206----"
+DIALOGFLOW_PROJECT_ID = "teanaps-chat"
+DIALOGFLOW_LANGUAGE_CODE = "ko"
+DIALOGFLOW_SESSTION_ID = "123----"

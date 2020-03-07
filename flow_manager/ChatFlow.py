@@ -7,6 +7,7 @@ from teanaps.text_analysis import TfidfCalculator
 
 from flow_manager import configure as con
 from flow_manager import IntentClassifier
+from flow_manager.DialogflowHandler import DialogflowHandler
 
 from bs4 import BeautifulSoup 
 import urllib.request
@@ -32,6 +33,8 @@ class ChatFlow():
             self.intent_id_to_name = self.fh.load_data(con.MODEL_CONFIG["random_forest"]["intent_id_to_name"])
         elif model_type == "bert":
             self.ic = IntentClassifier.IntentClassifierBERT()
+        elif model_type == "dialogflow":
+            self.dm = DialogflowHandler()
         self.model_type = model_type
                
     def get_intent(self, flow, query, max_intent_count=1, intent_th=0):
@@ -51,13 +54,20 @@ class ChatFlow():
             for intent_no, intent in enumerate(intent_list[:max_intent_count]):
                 flow.set_intent_type(intent_no, intent[0])
                 flow.set_probability(intent_no, intent[2])
+                flow.set_nlu_type(intent_no, "machine-learning")
         elif self.model_type == "bert":
             intent_prob_list = self.ic.parse(query_lower, intent_count=max_intent_count)
             intent_list = [(intent_type, intent_prob) for intent_type, intent_prob in intent_prob_list if intent_prob > intent_th]
             for intent_no, intent in enumerate(intent_list[:max_intent_count]):
                 flow.set_intent_type(intent_no, intent[0])
                 flow.set_probability(intent_no, intent[1])
-                
+                flow.set_nlu_type(intent_no, "deep-learning")
+        elif self.model_type == "dialogflow":
+            intent = self.dm.detect_intent_texts(query_lower)
+            flow.set_intent_type(0, intent[0])
+            flow.set_probability(0, intent[1])
+            flow.set_nlu_type(0, "dialogflow")
+            
     def select_intent(self, flow, intent_no):
         flow["intent"] = [flow["intent"][intent_no]]
                   
@@ -68,15 +78,12 @@ class ChatFlow():
         pos_result = self.ma.parse(query)
         ner_result = self.ner.parse(query)
         sa_result = self.sa.parse(pos_result, ner_result)
-        print(flow)
         for intent in flow["intent"]:
             intent["meta"] = {}
             intent["sub_meta"] = []
             for meta in con.META_FOR_INTENT[intent["intent_type"]]:
-                print(meta)
                 meta_tag = con.NER_FOR_META[meta]
                 intent["meta"][meta] = []
-                print(flow)
                 for word, pos_tag, ner_tag, _ in sa_result:
                     if ner_tag in meta_tag:
                         intent["meta"][meta].append(word)
@@ -346,6 +353,7 @@ class Flow():
         intent = {
             "intent_type": None,
             "probability": 0.0,
+            "nlu_type": "kakao open builder i",
             "meta": {},
             "sub_meta": [],
             "answer": []
@@ -377,7 +385,9 @@ class Flow():
     
     def set_intent_type(self, intent_no, intent_type):
         self.flow["intent"][intent_no]["intent_type"] = intent_type
-    
+        
+    def set_nlu_type(self, intent_no, nlu_type):
+        self.flow["intent"][intent_no]["nlu_type"] = nlu_type
     def set_status(self, status):
         self.flow["status"] = status
     
