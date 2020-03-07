@@ -28,19 +28,19 @@
 
 ### `TEANAPS Chat-bot` Architecture
 
-- 챗봇 구조도
+- `TEANAPS Chat-bot` 시스템 구성도
 
   > ![chatbot_architecture](data/sample_image/chatbot_architecture.png)
 
   > Notes :  
-  > - `TEANAPS` 챗봇의 구조는 간단한 Q/A 또는 정보검색을 위해 설계되었습니다.
+  > - `TEANAPS Chat-bot`의 구조는 간단한 Q/A 또는 정보검색을 위해 설계되었습니다.
   > - 챗봇은 그 용도와 역할에 따라 매우 복잡한 구조로 만들어지기도 합니다.
 
-- 챗봇이 사용자 질문에 답변하는 과정 (Process Diagram)
+- `TEANAPS Chat-bot`이 사용자 질문에 답변하는 과정 (Process Diagram)
 
   > ![chatbot_flow](data/sample_image/chatbot_flow.png)
 
-- 각 과정 별 역할
+- 처리과정 및 역할
 
     - ① 질문
       
