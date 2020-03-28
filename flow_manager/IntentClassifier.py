@@ -1,6 +1,6 @@
 from teanaps.handler import FileHandler
 
-from flow_manager import configure as con
+import configure as con
 
 from gluonnlp.data import SentencepieceTokenizer
 import numpy as np

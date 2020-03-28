@@ -1,6 +1,6 @@
 import dialogflow_v2 as dialogflow
 
-from flow_manager import configure as con
+import configure as con
 
 import os
 os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = con.DIALOGFLOW_CREDENTIAL_PATH
