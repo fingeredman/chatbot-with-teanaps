@@ -1,7 +1,8 @@
 from __future__ import absolute_import
 
-from flow_manager.ChatFlow import ChatFlow
-from flow_manager.ChatFlow import Flow
+from flow_manager.Flow import Flow
+from flow_manager.SkillHandler import SkillHandler
+from flow_manager.DialogflowHandler import DialogflowHandler
+from flow_manager.FlowHandler import FlowHandler
 from flow_manager.IntentClassifier import IntentClassifierBERT
 from flow_manager.IntentClassifier import BERTClassifier
-from flow_manager.DialogflowHandler import DialogflowHandler
