@@ -1,7 +1,7 @@
 # `TEANAPS`를 활용해 하루만에 챗봇 구현하기
 
 > 본 자료는 챗봇의 기본적인 구조를 설명하고 구현방법을 설명하기 위해 제작되었습니다. 챗봇은 `AI`기술과 `자연어처리` 기술을 활용해 사람처럼 대화가 가능한 인터페이스를 제공합니다. 챗봇은 그 사용법이 사람과 대화하는 방식과 유사하여 사용법이 친근하고, 온라인 환경을 선호하는 현대인들이 접근하기 매우 편리한 수단입니다. 때문에 챗봇이 적용되는 영역은 단순한 질의응답 부터 상품주문, 고객상담, 정보검색 까지 다양하게 확장되고 있으며, 다양한 서비스가 챗봇을 도입하여 활용하고 있습니다.  
-`TEANAPS Chat-bot`은 `TEANAPS` 패키지에서 제공하는 다양한 자연어처리 기술을 활용하여 빠르게 직접 챗봇의 기본기능을 수행하도록 구현되었습니다. 또한 `Google Dialogflow`, `Kakao i Open Builder`와 함께 동작하여 기능확장과 인터페이스 연동이 용이합니다. 챗봇에 대한 이해를 위해 `TEANAPS` 자료의 [`User Guide`](https://github.com/fingeredman/teanaps/blob/master/document/teanaps_user_guide-install_teanaps.md#teanaps-user-guide)와 [`Tutorial`](https://github.com/fingeredman/teanaps/blob/master/document/teanaps_user_guide-tutorial.md#teanaps-user-guide)를 먼저 살펴보시길 권장드리며, `TEANAPS Caht-bot`을 적용한 [카카오톡 채널 챗봇](./README.md#what-can-you-do-with-the-teanaps-chat-bot)을 직접 사용해보면서 따라해보시길 권장드립니다.
+`TEANAPS Chat-bot`은 `TEANAPS` 패키지에서 제공하는 다양한 자연어처리 기술을 활용하여 빠르게 직접 챗봇의 기본기능을 수행하도록 구현되었습니다. 또한 `Google Dialogflow`, `Kakao i Open Builder`와 함께 동작하여 기능확장과 인터페이스 연동이 용이합니다. 챗봇에 대한 이해를 위해 `TEANAPS` 자료의 [`User Guide`](https://github.com/fingeredman/teanaps/blob/master/document/teanaps_user_guide-install_teanaps.md#teanaps-user-guide)와 [`Tutorial`](https://github.com/fingeredman/teanaps/blob/master/document/teanaps_user_guide-tutorial.md#teanaps-user-guide)를 먼저 살펴보시길 권장드리며, `TEANAPS Caht-bot`을 적용한 [카카오톡 채널](./README.md#what-can-you-do-with-the-teanaps-chat-bot)을 통해 챗봇을 직접 사용해보면서 따라해보시길 권장드립니다.
 
 - 본 자료는 텍스트 마이닝을 활용한 연구 및 강의를 위한 목적으로 제작되었습니다.
 - 본 자료를 강의 또는 연구 목적으로 활용하고자 하시는 경우 꼭 아래 메일주소로 연락주세요.
