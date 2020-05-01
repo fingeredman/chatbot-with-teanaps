@@ -12,7 +12,7 @@
 ---
 ## Notice!
 > - 2020.4.29 ~ 5.5, 6일간 `TEANAPS` 서버 이전 관계로 카카오톡 플러스 친구를 통한 `teanaps chatbot` 이용이 제한됩니다.  
-
+> - 2020.4.29 ~ 5.5, 6일간 `TEANAPS` 서버 이전 관계로 'http://chat.teanaps.com 도메인을 통한 접속이 제한됩니다. GitHub URL을 활용해 접속해주세요.    
 ---
 ## What can you do with the `TEANAPS Chat-bot`?
 
