@@ -8,11 +8,7 @@
 - 본 자료에 대한 <U>상업적 활용과 허가되지 않은 배포를 금지</U>합니다.
 - 강의, 저작권, 출판, 특허, 공동저자에 관련해서는 문의 바랍니다.
 - **Contact : FINGEREDMAN(fingeredman@gmail.com)**
-
----
-## Notice!
-> - 2020.4.29 ~ 5.5, 6일간 `TEANAPS` 서버 이전 관계로 카카오톡 플러스 친구를 통한 `teanaps chatbot` 이용이 제한됩니다.  
-> - 2020.4.29 ~ 5.5, 6일간 `TEANAPS` 서버 이전 관계로 'http://chat.teanaps.com 도메인을 통한 접속이 제한됩니다. GitHub URL을 활용해 접속해주세요.    
+   
 ---
 ## What can you do with the `TEANAPS Chat-bot`?
 
@@ -134,6 +130,7 @@
 > 2020.02.09. 기본 구성 입력   
 > 2020.03.01. `Documentation` 업데이트   
 > 2020.03.14. `Documentation` 업데이트   
+> 2020.05.29. `TEANAPS` 서버 이전에 따른 안정화 및 업데이트  
 
 <br><br>
 ---
