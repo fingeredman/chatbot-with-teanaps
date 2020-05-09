@@ -127,10 +127,10 @@
 
 ---
 ## Update History
-> 2020.02.09. 기본 구성 입력   
-> 2020.03.01. `Documentation` 업데이트   
-> 2020.03.14. `Documentation` 업데이트   
 > 2020.05.02. `TEANAPS` API 서버 업데이트 반영  
+> 2020.03.14. `Documentation` 업데이트   
+> 2020.03.01. `Documentation` 업데이트   
+> 2020.02.09. 기본 구성 입력   
 
 <br><br>
 ---
