@@ -10,6 +10,11 @@
 - **Contact : ADMIN(admin@teanaps.com)**
    
 ---
+## Notice! 
+> - 카카오톡 채널과 `TEANAPS`를 활용 챗봇 구축 실무/연구 프로젝트 **지원이 필요하신 분들** 또는 **사례 공유가 가능하신 분**의 연락을 기다립니다.     
+(***Contact : admin@teanaps.com***)  
+
+---
 ## What can you do with the `TEANAPS Chat-bot`?
 
 - `TEANAPS` 챗봇은 카카오톡 플러스친구에서 `teanaps chatbot`을 검색해 친구추가 후 직접 사용해보실 수 있습니다.
